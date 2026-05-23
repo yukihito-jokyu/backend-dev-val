@@ -1,0 +1,68 @@
+version: '3'
+
+vars:
+  DB_DSN: "host=localhost port=5432 user=postgres password=postgres dbname=backend_dev_val sslmode=disable"
+
+tasks:
+  build:
+    desc: Build the application
+    cmds:
+      - go build -o bin/server ./cmd/server
+
+  run:
+    desc: Run the application
+    cmds:
+      - go run ./cmd/server
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test -v -cover ./...
+
+  lint:
+    desc: Run linter
+    cmds:
+      - golangci-lint run ./...
+
+  fmt:
+    desc: Format code
+    cmds:
+      - golangci-lint fmt ./...
+
+  db-up:
+    desc: Start PostgreSQL
+    cmds:
+      - docker compose up -d
+
+  db-down:
+    desc: Stop PostgreSQL
+    cmds:
+      - docker compose down
+
+  db-migrate:
+    desc: Run database migrations
+    cmds:
+      - goose -dir migrations postgres "{{.DB_DSN}}" up
+
+  db-rollback:
+    desc: Rollback last migration
+    cmds:
+      - goose -dir migrations postgres "{{.DB_DSN}}" down
+
+  db-status:
+    desc: Show migration status
+    cmds:
+      - goose -dir migrations postgres "{{.DB_DSN}}" status
+
+  wire:
+    desc: Generate Wire DI code
+    cmds:
+      - wire ./internal/di
+
+  setup:
+    desc: Initial project setup
+    cmds:
+      - go mod tidy
+      - task: db-up
+      - sleep 2
+      - task: db-migrate
